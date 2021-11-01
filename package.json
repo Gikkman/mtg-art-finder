@@ -1,0 +1,24 @@
+{
+  "name": "scryfall-image-downloader",
+  "version": "1.0.0",
+  "description": "Small tool for downloading scryfall images",
+  "main": "index.ts",
+  "scripts": {
+    "start": "ts-node index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gikkman/scryfall-image-downloader.git"
+  },
+  "author": "Gikkman",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Gikkman/scryfall-image-downloader/issues"
+  },
+  "homepage": "https://github.com/Gikkman/scryfall-image-downloader#readme",
+  "dependencies": {
+    "scryfall-api": "^2.2.2",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.4.4"
+  }
+}

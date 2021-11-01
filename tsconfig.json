@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "esModuleInterop": true,
+        "experimentalDecorators": true,
+        "strict": true,
+        "incremental": true,
+        "module": "commonjs",
+        "target": "es2019",
+        "allowJs": true,
+        "sourceMap": true,
+    }
+}
