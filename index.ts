@@ -1,13 +1,15 @@
 import fs from "fs";
+import fsa from "fs/promises";
 import readline from "readline";
 import path from "path";
 import https from "https";
 import stream from 'stream';
+import os from 'os';
 import { Card, Cards } from 'scryfall-api';
 
 const cwd = process.cwd();
 const artFolderPath = path.join(cwd, "art");
-
+const missingCards = new Array<string>();
 async function doit() {
     if( !fs.existsSync( artFolderPath )) {
         fs.mkdirSync( artFolderPath );
@@ -16,19 +18,31 @@ async function doit() {
         input: fs.createReadStream( path.join(cwd, "cards.txt") ),
     });
     for await (const line of rl) {
-        if(line.length === 0) continue;
+        if(line.trim().length === 0) continue;
         await processCardLine(line);
-        await sleep(100);
+        await sleep(50);
     }
     rl.close();
 };
 doit()
 .then(() => {
+    if(missingCards.length > 0) {
+        const data = missingCards.join(os.EOL);
+        console.error("----------------------------------------------")
+        console.error("-- Some cards' art could not be found       --")
+        console.error("-- A list is written to 'cards-missing.txt' --")
+        console.error("----------------------------------------------")
+        return fsa.writeFile( path.join(cwd, "cards-missing.txt"), data);
+    }
+})
+.then(() => {
     console.log("Done");
 })
 
-async function processCardLine(line: string) {    
-    const regex = /[0-9]*[x]?[ ]?([\w+ !]+)\(?(\w{0,6})\)?/g;
+async function processCardLine(line: string) {
+    // Regex explanation (with optional parts being withing [] brackets)
+    // [Nx] [t:]CARD NAME [(SET CODE)]
+    const regex = /^(?:[0-9]*[x]?)?[\s]?(?:t:)?([\w+',.\- !]+)\(?(\w{0,6})\)?/g;
     const matches = regex.exec(line);
     if(!matches) return;
 
@@ -47,6 +61,7 @@ async function processCardLine(line: string) {
     const cards = await findAndSortCards(query);
     if(cards.length === 0) {
         console.error("No cards found for query: " + query)
+        missingCards.push(cardName + (setCode ? `(${setCode})` : ""));
         return;
     }
 
