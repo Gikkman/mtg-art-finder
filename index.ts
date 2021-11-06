@@ -6,6 +6,7 @@ import https from "https";
 import stream from 'stream';
 import os from 'os';
 import { Card, Cards } from 'scryfall-api';
+import sharp from 'sharp';
 
 const cwd = process.cwd();
 const artFolderPath = path.join(cwd, "art");
@@ -117,17 +118,16 @@ async function findAndSortCards(query: string) {
 } 
 
 function downloadImageToUrl(url: string, filename: string) { 
-    https.get(url, (response) => {                                        
-      const data = new stream.Transform();                                                    
+    https.get(url, (response) => {
+        const data = new stream.Transform();
 
-      response.on('data', function(chunk) {
-         data.push(chunk);                                                         
-      });                                                                         
+        response.on('data', function(chunk) {
+            data.push(chunk);
+        });
 
-      response.on('end', function() {
-         fs.writeFileSync(filename, data.read());                              
-      });
-      
+        response.on('end', function() {
+            applyColorFixes(data.read(), filename);
+        });
    }).end()
 };
 
@@ -138,3 +138,15 @@ function sleep(ms:number): Promise<unknown> {
         }, ms);
     })
 };
+
+async function applyColorFixes(buf: Buffer, fileLocation: string) {
+    sharp(buf)
+        .modulate({
+            lightness: -1.08,
+            saturation: 1.12
+        })
+        .toFile(fileLocation)
+        .catch(e => {
+            console.error("Error writing file " + fileLocation, e);
+        })
+}

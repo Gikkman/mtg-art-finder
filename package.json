@@ -18,7 +18,11 @@
   "homepage": "https://github.com/Gikkman/scryfall-image-downloader#readme",
   "dependencies": {
     "scryfall-api": "^2.2.2",
+    "sharp": "^0.29.2",
     "ts-node": "^10.4.0",
     "typescript": "^4.4.4"
+  },
+  "devDependencies": {
+    "@types/sharp": "^0.29.3"
   }
 }
