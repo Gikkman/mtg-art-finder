@@ -6,26 +6,49 @@ import https from "https";
 import stream from 'stream';
 import os from 'os';
 import { Card, Cards } from 'scryfall-api';
-import sharp from 'sharp';
+import { ensureProperty, readProperties } from "./properties";
+import { configureLogger, Logger } from "./logger";
 
 const cwd = process.cwd();
-const artFolderPath = path.join(cwd, "art");
 const missingCards = new Array<string>();
-async function doit() {
-    if( !fs.existsSync( artFolderPath )) {
-        fs.mkdirSync( artFolderPath );
+
+type Properties = {inputFilePath: string, outputFolderPath: string};
+
+async function main() {
+    const props = readProperties("app.properties");
+    configureLogger(props.get("app.log-level")?.toString());
+
+    const inputFile = ensureProperty("input.cards", props);
+    const outputFolder = ensureProperty("output.folder", props);
+
+    const inputFilePath = path.join(cwd, inputFile);
+    if(!fs.existsSync(inputFilePath)) {
+        throw "No file found at input file path " + inputFilePath;
     }
+
+    const outputFolderPath = path.join(cwd, outputFolder);
+    if(!fs.existsSync(outputFolderPath)) {
+        Logger.debug("No directory for output found. Creating it at " + outputFolderPath);
+        fs.mkdirSync(outputFolderPath);
+    }
+
+    return {inputFilePath, outputFolderPath};
+}
+
+async function doit(properties: Properties) {
     const rl = readline.createInterface({
-        input: fs.createReadStream( path.join(cwd, "cards.txt") ),
+        input: fs.createReadStream( properties.inputFilePath ),
     });
     for await (const line of rl) {
         if(line.trim().length === 0) continue;
-        await processCardLine(line);
+        await processCardLine(line, properties);
         await sleep(50);
     }
     rl.close();
 };
-doit()
+
+main()
+.then(doit)
 .then(() => {
     if(missingCards.length > 0) {
         const data = missingCards.join(os.EOL);
@@ -39,8 +62,11 @@ doit()
 .then(() => {
     console.log("Done");
 })
+.catch(e => {
+    console.error(e);
+});
 
-async function processCardLine(line: string) {
+async function processCardLine(line: string, properties: Properties) {
     // Regex explanation (with optional parts being withing [] brackets)
     // [Nx] [t:]CARD NAME [(SET CODE)]
     const regex = /^(?:[0-9]*[x]?)?[\s]?(?:t:)?([\w+',.\- !]+)\(?(\w{0,6})\)?/g;
@@ -51,26 +77,26 @@ async function processCardLine(line: string) {
     const setCode = matches[2].trim();
     let query: string;
     if(setCode) {
-        console.log(`Downloading card: ${cardName} (${setCode})`);
+        Logger.info(`Downloading card: ${cardName} (${setCode})`);
         query = `!"${cardName}" set:${setCode}`;
     }
     else {
-        console.log(`Downloading card: ${cardName}`);
+        Logger.info(`Downloading card: ${cardName}`);
         query = `!"${cardName}"`;
     }
 
     const cards = await findAndSortCards(query);
     if(cards.length === 0) {
-        console.error("No cards found for query: " + query)
+        Logger.error("No cards found for query: " + query)
         missingCards.push(cardName + (setCode ? `(${setCode})` : ""));
         return;
     }
 
     const winner = cards[0];
-    const downloadLocation = path.join(artFolderPath, `${winner.name}.jpg`);
+    const downloadLocation = path.join(properties.outputFolderPath, `${winner.name}.jpg`);
     const downloadUri = winner.image_uris?.art_crop;
     if(downloadUri === undefined || downloadUri.length === 0) {
-        console.error(`No cards with art_crop found for query '${query}'`);
+        Logger.error(`No cards with art_crop found for query '${query}'`);
         return;
     }
     downloadImageToUrl(downloadUri, downloadLocation);
@@ -126,7 +152,10 @@ function downloadImageToUrl(url: string, filename: string) {
         });
 
         response.on('end', function() {
-            applyColorFixes(data.read(), filename);
+            Logger.debug("Image downloaded. Writing to ", filename)
+            fs.writeFile(filename, data.read(),  (err) => {
+                if(err) Logger.error("Error saving file " + filename, err);
+            });
         });
    }).end()
 };
@@ -138,15 +167,3 @@ function sleep(ms:number): Promise<unknown> {
         }, ms);
     })
 };
-
-async function applyColorFixes(buf: Buffer, fileLocation: string) {
-    sharp(buf)
-        .modulate({
-            lightness: -1.08,
-            saturation: 1.12
-        })
-        .toFile(fileLocation)
-        .catch(e => {
-            console.error("Error writing file " + fileLocation, e);
-        })
-}

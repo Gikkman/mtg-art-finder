@@ -1,7 +1,3 @@
-+2 Mace (M21)
-1x Peek
-1x Opt (M21)
-10x Murder (CMR) --something --something
-Shock (PMEI)
-Lightning Bolt
-+2 Mace
+Peek
+1 Murder
+1x Shock (BBD)

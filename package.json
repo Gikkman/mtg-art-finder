@@ -2,9 +2,13 @@
   "name": "scryfall-image-downloader",
   "version": "1.0.0",
   "description": "Small tool for downloading scryfall images",
-  "main": "index.ts",
+  "main": "src/index.ts",
   "scripts": {
-    "start": "ts-node index.ts"
+    "prebuild": "rm -rf release & npm run compile",
+    "build": "pkg build/index.js --target=node14-win-x64 -o release/scryfall-image-downloader",
+    "postbuild": "copyfiles cards.txt app.properties release",
+    "compile": "tsc",
+    "start": "ts-node src/index.ts"
   },
   "repository": {
     "type": "git",
@@ -17,12 +21,14 @@
   },
   "homepage": "https://github.com/Gikkman/scryfall-image-downloader#readme",
   "dependencies": {
-    "scryfall-api": "^2.2.2",
-    "sharp": "^0.29.2",
-    "ts-node": "^10.4.0",
-    "typescript": "^4.4.4"
+    "properties-reader": "^2.2.0",
+    "scryfall-api": "^2.2.2"
   },
   "devDependencies": {
-    "@types/sharp": "^0.29.3"
+    "@types/properties-reader": "^2.1.1",
+    "copyfiles": "^2.4.1",
+    "pkg": "^5.4.1",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.4.4"
   }
 }
