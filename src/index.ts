@@ -15,7 +15,7 @@ const missingCards = new Array<string>();
 type Properties = {inputFilePath: string, outputFolderPath: string};
 
 async function main() {
-    const props = readProperties("scryfall-image-downloader.properties");
+    const props = readProperties("mtg-art-finder.properties");
     configureLogger(props.get("app.log-level")?.toString());
 
     const inputFile = ensureProperty("input.cards", props);

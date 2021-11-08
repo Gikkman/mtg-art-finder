@@ -1,25 +1,25 @@
 {
-  "name": "scryfall-image-downloader",
+  "name": "mtg-art-finder",
   "version": "1.0.0",
   "description": "Small tool for downloading scryfall images",
   "main": "src/index.ts",
   "scripts": {
     "prebuild": "rm -rf release & npm run compile",
-    "build": "pkg build/index.js --target=node14-win-x64 -o release/scryfall-image-downloader",
+    "build": "pkg build/index.js --target=node14-win-x64 -o release/mtg-art-finder",
     "postbuild": "copyfiles cards.txt app.properties release",
     "compile": "tsc",
     "start": "ts-node src/index.ts"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Gikkman/scryfall-image-downloader.git"
+    "url": "git+https://github.com/Gikkman/mtg-art-finder.git"
   },
   "author": "Gikkman",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Gikkman/scryfall-image-downloader/issues"
+    "url": "https://github.com/Gikkman/mtg-art-finder/issues"
   },
-  "homepage": "https://github.com/Gikkman/scryfall-image-downloader#readme",
+  "homepage": "https://github.com/Gikkman/mtg-art-finder#readme",
   "dependencies": {
     "properties-reader": "^2.2.0",
     "scryfall-api": "^2.2.2"
