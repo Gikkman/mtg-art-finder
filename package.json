@@ -5,7 +5,7 @@
   "bin": "build/index.js",
   "scripts": {
     "prebuild": "node -r fs -e \"fs.rmSync('release', {recursive:true,force:true})\" & npm run compile",
-    "build": "pkg .",
+    "build": "pkg . --compress=gzip",
     "postbuild": "copyfiles cards.txt mtg-art-finder.properties release",
     "compile": "tsc",
     "start": "ts-node src/index.ts"
