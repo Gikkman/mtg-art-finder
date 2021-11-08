@@ -4,7 +4,7 @@
   "description": "Small tool for downloading scryfall images",
   "bin": "build/index.js",
   "scripts": {
-    "prebuild": "rm -rf release & npm run compile",
+    "prebuild": "node -r fs -e \"fs.rmSync('release', {recursive:true,force:true})\" & npm run compile",
     "build": "pkg .",
     "postbuild": "copyfiles cards.txt mtg-art-finder.properties release",
     "compile": "tsc",

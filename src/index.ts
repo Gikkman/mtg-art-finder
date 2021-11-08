@@ -5,7 +5,7 @@ import path from "path";
 import https from "https";
 import stream from 'stream';
 import os from 'os';
-import { Card, Cards } from 'scryfall-api';
+import { Cards } from 'scryfall-api';
 import { ensureProperty, readProperties } from "./properties";
 import { configureLogger, Logger } from "./logger";
 
@@ -13,7 +13,7 @@ const cwd = process.cwd();
 const missingCards = new Array<string>();
 
 type Properties = {inputFilePath: string, outputFolderPath: string};
-
+type CardData = {artist: string, set: string, name: string, image_uri?: string}
 async function main() {
     const props = readProperties("mtg-art-finder.properties");
     configureLogger(props.get("app.log-level")?.toString());
@@ -69,77 +69,56 @@ main()
 async function processCardLine(line: string, properties: Properties) {
     // Regex explanation (with optional parts being withing [] brackets)
     // [Nx] [t:]CARD NAME [(SET CODE)]
-    const regex = /^(?:[0-9]*[x]?)?[\s]?(?:t:)?([\w+',.\- !]+)\(?(\w{0,6})\)?/g;
+    const regex = /^(?:[0-9]*[x]?)?[\s]?(\w:)?([\w+',.\- !]+)\(?(\w{0,6})\)?/g;
     const matches = regex.exec(line);
     if(!matches) return;
 
-    const cardName = matches[1].trim();
-    const setCode = matches[2].trim();
+    const isToken = !!matches[1];
+    const cardName = matches[2].trim();
+    const setCode = matches[3].trim();
     let query: string;
     if(setCode) {
-        Logger.info(`Downloading card: ${cardName} (${setCode})`);
+        Logger.info(`Downloading: ${cardName} (${setCode})`);
         query = `!"${cardName}" set:${setCode}`;
     }
     else {
-        Logger.info(`Downloading card: ${cardName}`);
+        Logger.info(`Downloading: ${cardName}`);
         query = `!"${cardName}"`;
     }
 
-    const cards = await findAndSortCards(query);
+    const cards = await findAndSortCards(query, isToken);
     if(cards.length === 0) {
         Logger.error("No cards found for query: " + query)
         missingCards.push(cardName + (setCode ? `(${setCode})` : ""));
         return;
     }
 
-    const winner = cards[0];
-    const downloadLocation = path.join(properties.outputFolderPath, `${winner.name}.jpg`);
-    const downloadUri = winner.image_uris?.art_crop;
-    if(downloadUri === undefined || downloadUri.length === 0) {
-        Logger.error(`No cards with art_crop found for query '${query}'`);
-        return;
+    for( const card of cards) {
+        const downloadLocation = path.join(properties.outputFolderPath, `${card.name}.jpg`);
+        const downloadUri = card.image_uri;
+        if(downloadUri === undefined || downloadUri.length === 0)
+            Logger.error(`No art found for card '${card.name} (${card.set}) [Query was ${query}]'`);
+        else
+            downloadImageToUrl(downloadUri, downloadLocation);
     }
-    downloadImageToUrl(downloadUri, downloadLocation);
 }
 
-async function findAndSortCards(query: string) {
-    const cards = new Array<Card>();
-    const cardPages = Cards.search(query);
+async function findAndSortCards(query: string, isToken: boolean) {
+    const cards = new Array<CardData>();
+    const cardPages = Cards.search(query, {include_extras: isToken});
+    let page = await cardPages.next();
 
-    while( cardPages.hasMore ) {
-        let page = await cardPages.next();
-        for(const card of page) {
-            if(!card.image_uris?.art_crop) {
-                continue;
-            }
-            cards.push(card);
+    for(const card of page) {
+        const faces = card.card_faces ? card.card_faces : [card]
+        for(const face of faces ) {
+            const name = face.name;
+            const artist = face.artist ?? 'UNKNOWN';
+            const set = card.set;
+            const image_uri = face.image_uris?.art_crop;
+            cards.push( {name, artist, set, image_uri});
         }
     }
 
-    cards.sort( (a:Card,b:Card) => {
-        // Prefer those with art_crop
-        if(a.image_uris?.art_crop && !b.image_uris?.art_crop) return 1;
-        if(!a.image_uris?.art_crop && b.image_uris?.art_crop) return -1;
-        // Prefer non-textless
-        if(a.textless && !b.textless) return -1;
-        if(!a.textless && b.textless) return 1;
-        // Prefer non-promo
-        if(a.promo && !b.promo) return -1;
-        if(!a.promo && b.promo) return 1;
-        // Prefer non-fullart
-        if(a.full_art && !b.full_art) return -1;
-        if(!a.full_art && b.full_art) return 1;
-        // Prefer non-variation
-        if(a.variation && !b.variation) return -1;
-        if(!a.variation && b.variation) return 1;
-        // Prefer highres images
-        if(a.highres_image && !b.highres_image) return 1;
-        if(!a.highres_image && b.highres_image) return -1;
-        // Prefer the newest
-        if(a.released_at > b.released_at) return 1;
-        if(a.released_at < b.released_at) return -1;
-        return 0;
-    })
     return cards;
 } 
 
