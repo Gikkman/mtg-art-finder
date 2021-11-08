@@ -2,11 +2,11 @@
   "name": "mtg-art-finder",
   "version": "1.0.0",
   "description": "Small tool for downloading scryfall images",
-  "main": "src/index.ts",
+  "bin": "build/index.js",
   "scripts": {
     "prebuild": "rm -rf release & npm run compile",
-    "build": "pkg build/index.js --target=node14-win-x64 -o release/mtg-art-finder",
-    "postbuild": "copyfiles cards.txt app.properties release",
+    "build": "pkg .",
+    "postbuild": "copyfiles cards.txt mtg-art-finder.properties release",
     "compile": "tsc",
     "start": "ts-node src/index.ts"
   },
@@ -25,10 +25,15 @@
     "scryfall-api": "^2.2.2"
   },
   "devDependencies": {
+    "@types/node": "^16.11.6",
     "@types/properties-reader": "^2.1.1",
     "copyfiles": "^2.4.1",
     "pkg": "^5.4.1",
     "ts-node": "^10.4.0",
     "typescript": "^4.4.4"
+  },
+  "pkg": {
+    "targets": ["node14-win-x64"],
+    "outputPath": "release"
   }
 }
