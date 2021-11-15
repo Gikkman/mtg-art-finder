@@ -94,7 +94,7 @@ async function processCardLine(line: string, properties: Properties) {
     }
 
     for( const card of cards) {
-        const downloadLocation = path.join(properties.outputFolderPath, `${card.name}.jpg`);
+        const downloadLocation = path.join(properties.outputFolderPath, `${card.name} (${card.artist}).jpg`);
         const downloadUri = card.image_uri;
         if(downloadUri === undefined || downloadUri.length === 0)
             Logger.error(`No art found for card '${card.name} (${card.set}) [Query was ${query}]'`);
